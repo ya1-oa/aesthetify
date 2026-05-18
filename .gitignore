@@ -1,9 +1,28 @@
 node_modules/
+
+# Environment — never commit real credentials
 .env
 .env.local
-.cache/
-build/
-dist/
-.DS_Store
-*.log
+
+# Build outputs
+/.cache
+/build
+/dist
+/public/build
+
+# Hydrogen / Shopify
+/.mf
+.shopify
+.react-router
+
+# CMS
 .sanity/
+
+# OS
+.DS_Store
+
+# Logs
+*.log
+
+# The nested scaffold folder (temporary, safe to delete after npm install at root)
+aesthetify/

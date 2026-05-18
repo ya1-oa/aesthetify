@@ -1,0 +1,134 @@
+/**
+ * Aesthetify — Tailwind v4 Design Token Configuration
+ *
+ * TAILWIND v4 CHANGE: No more tailwind.config.ts.
+ * Everything lives here in CSS using @theme.
+ *
+ * How tokens map to utility classes:
+ *   --color-blush        →  bg-blush, text-blush, border-blush
+ *   --font-display       →  font-display
+ *   --radius-card        →  rounded-card
+ *   --shadow-card        →  shadow-card
+ *   --spacing-section    →  p-section, m-section, gap-section
+ *   --animate-fade-up    →  animate-fade-up
+ *
+ * Tailwind v4 docs: https://tailwindcss.com/docs/v4-beta#css-first-configuration
+ */
+
+@import 'tailwindcss';
+
+/* ─────────────────────────────────────────────────────────────────
+   BRAND DESIGN TOKENS
+   ───────────────────────────────────────────────────────────────── */
+@theme {
+
+  /* ── COLORS ─────────────────────────────────────────────────── *
+   * Named by ROLE, not hue. "blush" beats "pink-200".
+   * Change a brand color once here → updates everywhere.
+   * ──────────────────────────────────────────────────────────── */
+
+  /* Blush — primary background and chip color */
+  --color-blush:          #FFD6E0;
+  --color-blush-light:    #FFF0F4;   /* near-white tint, hero backgrounds */
+  --color-blush-dark:     #F4B8C8;   /* deeper blush, hover borders */
+
+  /* Lavender — accent sections and highlights */
+  --color-lavender:       #E8D5F5;
+  --color-lavender-light: #F5EEFF;   /* pale tint */
+  --color-lavender-dark:  #D0B3ED;   /* buttons, tags */
+
+  /* Rose — CTAs, icons, interactive elements */
+  --color-rose:           #C9919E;
+  --color-rose-dark:      #A8717E;   /* hover state for CTAs */
+
+  /* Cream — primary page background */
+  --color-cream:          #FFF8F5;
+  --color-cream-dark:     #F5EDE8;   /* card backgrounds */
+
+  /* Charcoal — text, never pure black on a soft palette */
+  --color-charcoal:       #1A1A2E;
+  --color-charcoal-soft:  #3D3D5C;   /* secondary text, captions */
+
+
+  /* ── TYPOGRAPHY ──────────────────────────────────────────────── *
+   * Display: Playfair Display (serif) — editorial, luxury → headings
+   * Sans:    DM Sans (clean, modern) → body, labels, nav
+   *
+   * Loaded via Google Fonts in root.tsx links().
+   *
+   * Alternative: Cormorant Garamond + Inter → more editorial/luxury
+   * We chose DM Sans for better small-screen readability.
+   * ──────────────────────────────────────────────────────────── */
+  --font-display: "Playfair Display", Georgia, serif;
+  --font-sans:    "DM Sans", system-ui, -apple-system, sans-serif;
+
+
+  /* ── SPACING ─────────────────────────────────────────────────── *
+   * Section tokens keep vertical rhythm consistent.
+   * Use: py-section, py-section-lg
+   * ──────────────────────────────────────────────────────────── */
+  --spacing-section:    5rem;
+  --spacing-section-lg: 8rem;
+
+
+  /* ── BORDER RADIUS ───────────────────────────────────────────── *
+   * Soft, rounded shapes — nothing angular for this brand.
+   * ──────────────────────────────────────────────────────────── */
+  --radius-card: 1.25rem;   /* 20px — product cards, content blocks */
+  --radius-pill: 9999px;    /* full pill — buttons, tags */
+
+
+  /* ── SHADOWS ─────────────────────────────────────────────────── *
+   * Rose-tinted shadows feel branded, not generic grey.
+   * ──────────────────────────────────────────────────────────── */
+  --shadow-card:       0 4px 24px 0 rgba(201, 145, 158, 0.12);
+  --shadow-card-hover: 0 8px 40px 0 rgba(201, 145, 158, 0.22);
+  --shadow-glow:       0 0 32px 0 rgba(232, 213, 245, 0.60);
+
+
+  /* ── ANIMATION & EASING ──────────────────────────────────────── *
+   * Slow, graceful motion — aesthetic brands don't bounce.
+   * ──────────────────────────────────────────────────────────── */
+  --ease-aesthetic: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+
+  --animate-fade-up: fade-up 0.6s var(--ease-aesthetic) forwards;
+  --animate-fade-in: fade-in 0.4s ease forwards;
+
+  --duration-slow:   400ms;
+  --duration-slower: 600ms;
+
+}
+
+
+/* ─────────────────────────────────────────────────────────────────
+   KEYFRAMES
+   (defined outside @theme — @theme is for static tokens only)
+   ───────────────────────────────────────────────────────────────── */
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0);    }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+
+/* ─────────────────────────────────────────────────────────────────
+   GRADIENT UTILITIES
+   Background gradients can't go in @theme (they're not static values).
+   @utility creates them as first-class Tailwind classes.
+   Use: className="bg-gradient-hero"
+   ───────────────────────────────────────────────────────────────── */
+@utility bg-gradient-hero {
+  background-image: linear-gradient(135deg, #FFF0F4 0%, #F5EEFF 50%, #FFF8F5 100%);
+}
+
+@utility bg-gradient-section {
+  background-image: linear-gradient(180deg, #FFF8F5 0%, #FFF0F4 100%);
+}
+
+@utility bg-gradient-card {
+  background-image: linear-gradient(145deg, #FFFFFF 0%, #FFF0F4 100%);
+}
