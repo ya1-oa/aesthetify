@@ -1,8 +1,7 @@
 import {useLoaderData} from 'react-router';
 import type {Route} from './+types/_index';
 import type {FeaturedCollectionFragment} from 'storefrontapi.generated';
-import {MockShopNotice} from '~/components/MockShopNotice';
-import {HomeHero} from '~/components/HomeHero';
+import {HeroSlider} from '~/components/HeroSlider';
 import {HomeBrandStory} from '~/components/HomeBrandStory';
 import {HomeFeaturedCollections} from '~/components/HomeFeaturedCollections';
 import {HomeProducts} from '~/components/HomeProducts';
@@ -31,7 +30,8 @@ export async function loader(args: Route.LoaderArgs) {
 
 /**
  * Critical data — blocks until resolved, used above the fold.
- * We fetch 3 collections: first powers the Hero, all 3 power the grid.
+ * HeroSlider manages its own slide content, so we only need collections
+ * for the HomeFeaturedCollections grid below the fold.
  */
 async function loadCriticalData({context}: Route.LoaderArgs) {
   const [{collections}] = await Promise.all([
@@ -39,7 +39,6 @@ async function loadCriticalData({context}: Route.LoaderArgs) {
   ]);
 
   return {
-    isShopLinked: Boolean(context.env.PUBLIC_STORE_DOMAIN),
     collections: collections.nodes as FeaturedCollectionFragment[],
   };
 }
@@ -60,16 +59,12 @@ function loadDeferredData({context}: Route.LoaderArgs) {
 }
 
 export default function Homepage() {
-  const {isShopLinked, collections, recommendedProducts} =
-    useLoaderData<typeof loader>();
+  const {collections, recommendedProducts} = useLoaderData<typeof loader>();
 
   return (
     <>
-      {/* Dev-only notice when no Shopify store is connected */}
-      {isShopLinked ? null : <MockShopNotice />}
-
-      {/* 1. Hero — above fold, uses first collection */}
-      <HomeHero collection={collections[0] ?? null} />
+      {/* 1. Hero slideshow — full-width, top of page */}
+      <HeroSlider />
 
       {/* 2. Brand story — collage + copy */}
       <HomeBrandStory />
