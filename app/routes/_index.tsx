@@ -1,133 +1,102 @@
-import {Await, useLoaderData, Link} from 'react-router';
+import {useLoaderData} from 'react-router';
 import type {Route} from './+types/_index';
-import {Suspense} from 'react';
-import {Image} from '@shopify/hydrogen';
-import type {
-  FeaturedCollectionFragment,
-  RecommendedProductsQuery,
-} from 'storefrontapi.generated';
-import {ProductItem} from '~/components/ProductItem';
+import type {FeaturedCollectionFragment} from 'storefrontapi.generated';
 import {MockShopNotice} from '~/components/MockShopNotice';
+import {HomeHero} from '~/components/HomeHero';
+import {HomeBrandStory} from '~/components/HomeBrandStory';
+import {HomeFeaturedCollections} from '~/components/HomeFeaturedCollections';
+import {HomeProducts} from '~/components/HomeProducts';
 
 export const meta: Route.MetaFunction = () => {
-  return [{title: 'Hydrogen | Home'}];
+  return [
+    {title: 'Aesthetify — Curate Your World'},
+    {
+      name: 'description',
+      content:
+        'Aesthetic phone cases and accessories for people who treat everyday objects as an extension of themselves.',
+    },
+  ];
 };
 
 export async function loader(args: Route.LoaderArgs) {
-  // Start fetching non-critical data without blocking time to first byte
+  // Deferred (below-fold) data starts fetching immediately but doesn't
+  // block the initial HTML response. Products stream in after first paint.
   const deferredData = loadDeferredData(args);
 
-  // Await the critical data required to render initial state of the page
+  // Critical (above-fold) data is awaited — the hero needs collection data.
   const criticalData = await loadCriticalData(args);
 
   return {...deferredData, ...criticalData};
 }
 
 /**
- * Load data necessary for rendering content above the fold. This is the critical data
- * needed to render the page. If it's unavailable, the whole page should 400 or 500 error.
+ * Critical data — blocks until resolved, used above the fold.
+ * We fetch 3 collections: first powers the Hero, all 3 power the grid.
  */
 async function loadCriticalData({context}: Route.LoaderArgs) {
   const [{collections}] = await Promise.all([
-    context.storefront.query(FEATURED_COLLECTION_QUERY),
-    // Add other queries here, so that they are loaded in parallel
+    context.storefront.query(HOMEPAGE_COLLECTIONS_QUERY),
   ]);
 
   return {
     isShopLinked: Boolean(context.env.PUBLIC_STORE_DOMAIN),
-    featuredCollection: collections.nodes[0],
+    collections: collections.nodes as FeaturedCollectionFragment[],
   };
 }
 
 /**
- * Load data for rendering content below the fold. This data is deferred and will be
- * fetched after the initial page load. If it's unavailable, the page should still 200.
- * Make sure to not throw any errors here, as it will cause the page to 500.
+ * Deferred data — doesn't block HTML. Products grid streams in after load.
+ * Safe to fail: a catch returns null and the section simply doesn't render.
  */
 function loadDeferredData({context}: Route.LoaderArgs) {
   const recommendedProducts = context.storefront
     .query(RECOMMENDED_PRODUCTS_QUERY)
     .catch((error: Error) => {
-      // Log query errors, but don't throw them so the page can still render
       console.error(error);
       return null;
     });
 
-  return {
-    recommendedProducts,
-  };
+  return {recommendedProducts};
 }
 
 export default function Homepage() {
-  const data = useLoaderData<typeof loader>();
+  const {isShopLinked, collections, recommendedProducts} =
+    useLoaderData<typeof loader>();
+
   return (
-    <div className="home">
-      {data.isShopLinked ? null : <MockShopNotice />}
-      <FeaturedCollection collection={data.featuredCollection} />
-      <RecommendedProducts products={data.recommendedProducts} />
-    </div>
+    <>
+      {/* Dev-only notice when no Shopify store is connected */}
+      {isShopLinked ? null : <MockShopNotice />}
+
+      {/* 1. Hero — above fold, uses first collection */}
+      <HomeHero collection={collections[0] ?? null} />
+
+      {/* 2. Brand story — collage + copy */}
+      <HomeBrandStory />
+
+      {/* 3. Collections grid — 3 category cards */}
+      <HomeFeaturedCollections collections={collections} />
+
+      {/* 4. Product grid — deferred, streams in after first paint */}
+      <HomeProducts products={recommendedProducts} />
+    </>
   );
 }
 
-function FeaturedCollection({
-  collection,
-}: {
-  collection: FeaturedCollectionFragment;
-}) {
-  if (!collection) return null;
-  const image = collection?.image;
-  return (
-    <Link
-      className="featured-collection"
-      to={`/collections/${collection.handle}`}
-    >
-      {image && (
-        <div className="featured-collection-image">
-          <Image
-            data={image}
-            sizes="100vw"
-            alt={image.altText || collection.title}
-          />
-        </div>
-      )}
-      <h1>{collection.title}</h1>
-    </Link>
-  );
-}
+/* ------------------------------------------------------------------ *
+ * GRAPHQL QUERIES
+ * ------------------------------------------------------------------ */
 
-function RecommendedProducts({
-  products,
-}: {
-  products: Promise<RecommendedProductsQuery | null>;
-}) {
-  return (
-    <section
-      className="recommended-products"
-      aria-labelledby="recommended-products"
-    >
-      <h2 id="recommended-products">Recommended Products</h2>
-      <Suspense fallback={<div>Loading...</div>}>
-        <Await resolve={products}>
-          {(response) => (
-            <div className="recommended-products-grid">
-              {response
-                ? response.products.nodes.map((product) => (
-                    <ProductItem key={product.id} product={product} />
-                  ))
-                : null}
-            </div>
-          )}
-        </Await>
-      </Suspense>
-      <br />
-    </section>
-  );
-}
-
-const FEATURED_COLLECTION_QUERY = `#graphql
+/**
+ * Fetches 3 collections for the hero image (first) and collections grid.
+ * Extended from the scaffold's single-collection query.
+ * description is added for the collection cards.
+ */
+const HOMEPAGE_COLLECTIONS_QUERY = `#graphql
   fragment FeaturedCollection on Collection {
     id
     title
+    description
     image {
       id
       url
@@ -137,9 +106,9 @@ const FEATURED_COLLECTION_QUERY = `#graphql
     }
     handle
   }
-  query FeaturedCollection($country: CountryCode, $language: LanguageCode)
+  query HomepageCollections($country: CountryCode, $language: LanguageCode)
     @inContext(country: $country, language: $language) {
-    collections(first: 1, sortKey: UPDATED_AT, reverse: true) {
+    collections(first: 3, sortKey: UPDATED_AT, reverse: true) {
       nodes {
         ...FeaturedCollection
       }
@@ -166,7 +135,7 @@ const RECOMMENDED_PRODUCTS_QUERY = `#graphql
       height
     }
   }
-  query RecommendedProducts ($country: CountryCode, $language: LanguageCode)
+  query RecommendedProducts($country: CountryCode, $language: LanguageCode)
     @inContext(country: $country, language: $language) {
     products(first: 4, sortKey: UPDATED_AT, reverse: true) {
       nodes {
